@@ -1,0 +1,22 @@
+{
+    "title": "Nick Doornekamp",
+    "subtitle": "",
+    "owner": {
+        "name": "Nick Doornekamp",
+        "email": "nddoornekamp@gmail.com"
+    },
+    "social": {
+        "github": "ndoornekamp"
+    },
+    "seo": {
+        "title": "Nick Doornekamp",
+        "description": "Random collection of software engineering-related thoughts",
+        "author": "Nick Doornekamp",
+        "keywords": [
+            "blog",
+            "developer blog",
+            "engineering blog",
+            "python"
+        ]
+    }
+}
