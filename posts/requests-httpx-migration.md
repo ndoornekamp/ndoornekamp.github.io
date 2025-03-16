@@ -1,5 +1,5 @@
 ---
-title: How it broke: Migrating from requests to httpx
+title: How it broke - Migrating from requests to httpx
 date: 2023-05-25
 permalink: /requests-httpx-migration
 ---
