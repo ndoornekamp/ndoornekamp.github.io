@@ -8,6 +8,6 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Deploy
-        uses: ndoornekamp/github-pages-blog-action@c14b46ae5c740028244269869cfb17815857c421
+        uses: ndoornekamp/github-pages-blog-action@fa4060c6711400f7771a0834a1b67e8fde3092e2
         with:
           branch: gh-pages # Optional branch for GitHub Pages
