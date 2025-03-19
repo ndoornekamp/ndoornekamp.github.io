@@ -1,8 +1,10 @@
 ---
-title: How it broke - Migrating from requests to httpx
+title: How it broke - Timeouts in microservices
 date: 2023-05-25
-permalink: /requests-httpx-migration
+permalink: /timeouts-in-microservices
 ---
+
+About how an innocent-looking migration to a different HTTP library broke our microservice system.
 
 ## Setting the scene
 
@@ -23,7 +25,7 @@ sequenceDiagram
 
 ## What went wrong?
 
-During some unrelated work on Service B, I noticed that it used `httpx` for some HTTP requests and `requests` for others. Following the [boy scout rule](https://97-things-every-x-should-know.gitbooks.io/97-things-every-programmer-should-know/content/en/thing_08/), I decided to remove this inconsistency by getting rid of the dependency on `requests` and perform the requests with `httpx` instead. The requests were fairly simple; it looked like drop-in replacement:
+During some unrelated work on Service B (running Python), I noticed that it used `httpx` for some HTTP requests and `requests` for others. Following the [boy scout rule](https://97-things-every-x-should-know.gitbooks.io/97-things-every-programmer-should-know/content/en/thing_08/), I decided to remove this inconsistency by getting rid of the dependency on `requests` and perform the requests with `httpx` instead. The requests were fairly simple; it looked like drop-in replacement:
 
 ```diff
 - response = requests.post(url, data=payload)
