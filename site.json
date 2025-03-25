@@ -14,10 +14,11 @@
         "description": "Random collection of software engineering-related thoughts",
         "author": "Nick Doornekamp",
         "keywords": [
-            "blog",
-            "developer blog",
-            "engineering blog",
-            "python"
+            "software engineering",
+            "software development",
+            "python",
+            "kubernetes",
+            "docker"
         ]
     }
 }
