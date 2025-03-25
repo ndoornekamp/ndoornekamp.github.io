@@ -1,7 +1,7 @@
 ---
 title: Working with SIGTINT, SIGTERM and SIGKILL signals in Kubernetes and Python
 date: 2025-02-12
-permalink: /sigint-sigterm-sigkill-signals/
+permalink: /sigint-sigterm-sigkill-signals
 ---
 
 Signals are a way to (asynchronously) communicate with processes. They can originate from a user, another process or the kernel. They may be sent to a process to notify it of an event, or to request it to do something - for example, to terminate, which is the focus of this post.
