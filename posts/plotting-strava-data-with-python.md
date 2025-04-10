@@ -1,6 +1,6 @@
 ---
 title: Plotting Strava data with Python
-date: 2025-02-19
+date: 2020-02-16
 permalink: /plotting-strava-data-with-python
 ---
 
@@ -82,7 +82,7 @@ plt.plot(ride_longitudes, ride_latitudes, 'r-', alpha=1)
 plt.show()
 ```
 
-![Plot of the decoded polyline](../static/img/plotting-strava-data-with-python/decoded-polyline.png "Decoded polyline")
+![Plot of the decoded polyline](img/plotting-strava-data-with-python/decoded-polyline.png "Decoded polyline")
 
 ## Adding satellite imagery as background
 
@@ -116,11 +116,11 @@ m.plot(x, y, 'r-')
 plt.show()
 ```
 
-![Plot of the decoded polyline with satellite imagery as background](../static/img/plotting-strava-data-with-python/decoded-polyline-with-bg.png "Decoded polyline with background image")
+![Plot of the decoded polyline with satellite imagery as background](img/plotting-strava-data-with-python/decoded-polyline-with-bg.png "Decoded polyline with background image")
 
 And of course, if we can do it for one ride, we can do it for all of them by simply looping through them and adding them to the map:
 
-![Plot of all Strava activities in one picture](../static/img/plotting-strava-data-with-python/all-rides.png "All rides together in one plot")
+![Plot of all Strava activities in one picture](img/plotting-strava-data-with-python/all-rides.png "All rides together in one plot")
 
 ## Separating into clusters
 
@@ -147,7 +147,7 @@ Then, we’ll merge these lists if they have any common elements (this part was 
 
 Using this, we can give each cluster their own subplot: every list corresponds to one subplot in which all rides in that list are plotted. This results in the picture at the bottom of the page, which allow you to see more detail.
 
-![Plot of all Strava activities in one picture](../static/img/plotting-strava-data-with-python/ride-clusters.png "Separate plots per cluster")
+![Plot of all Strava activities in one picture](img/plotting-strava-data-with-python/ride-clusters.png "Separate plots per cluster")
 
 **Update 21/06/2020**: The script described in this blog is now running at https://nickdoornekamp.pythonanywhere.com/, where you can connect your own Strava profile to make pictures like the one above.
 
