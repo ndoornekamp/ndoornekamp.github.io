@@ -1,6 +1,6 @@
 ---
 title: Handling Lambda timeouts with grace
-date: 2025-06-18
+date: 2025-07-18
 permalink: /graceful-lambda-timeouts
 ---
 
