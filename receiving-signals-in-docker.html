@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>Receiving signals in Docker</title>
+    <meta name="description" content="Random collection of software engineering-related thoughts"/>
+    <meta name="keywords" content="software engineering,software development,python,kubernetes,docker,aws"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@9/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true});
+    </script>
+
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/ndoornekamp" class="link-github">GitHub</a>
+        <a target="_blank" href="https://linkedin.com/in/nick-doornekamp-35963039" class="link-linkedin">LinkedIN</a>
+        <!-- <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a> -->
+        <!-- <a href="mailto:" class="link-email">Email</a> -->
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Wed, February 19, 2025">Wed, February 19, 2025</time>
+        <h1 class="mar-b-7">Receiving signals in Docker</h1>
+    </header>
+    <p>In a Dockerfile, <code>RUN</code>, <code>CMD</code> and <code>ENTRYPOINT</code> instructions all have two possible forms:</p>
+<ul>
+<li>JSON array: <code>["command", "param1", "param2"]</code> (also known as 'exec form');</li>
+<li>Shell form: <code>command param1 param2</code>.</li>
+</ul>
+<p>When you use shell form, the executable runs as a child process, which doesn't pass <a href="/receiving-signals-in-docker">signals</a>. Therefore, Docker <a href="https://docs.docker.com/reference/build-checks/json-args-recommended/">recommends</a> using the JSON array form.</p>
+<p>However, the shell form is more flexible. For example, it allows variable substitution. (This can be useful, for example, when you want to reuse a Dockerfile for different projects by using an instruction like <code>CMD python -m ${PROJECT}</code>.)</p>
+<p>If you want the best of both worlds (i.e. a container that receives signals, but a Dockerfile with shell form instructions), you can use <code>exec</code> to run the command in the shell form:</p>
+<pre><code class="diff language-diff">- CMD python -m ${PROJECT}
++ CMD ["sh", "-c", "exec python -m ${PROJECT}"]
+</code></pre>
+<h2 id="resourcesfurtherreading">Resources &amp; further reading</h2>
+<ul>
+<li><a href="https://docs.docker.com/reference/dockerfile/#shell-and-exec-form">Dockerfile reference</a></li>
+<li><a href="https://hynek.me/articles/docker-signals/">Why Your Dockerized Application Isn’t Receiving Signals</a></li>
+</ul>
+</article>
+
+<footer class="text-center mar-tb-6">
+    © 2025 Nick Doornekamp, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>How it broke - Cache stampede</title>
+    <meta name="description" content="Random collection of software engineering-related thoughts"/>
+    <meta name="keywords" content="software engineering,software development,python,kubernetes,docker,aws"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@9/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true});
+    </script>
+
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/ndoornekamp" class="link-github">GitHub</a>
+        <a target="_blank" href="https://linkedin.com/in/nick-doornekamp-35963039" class="link-linkedin">LinkedIN</a>
+        <!-- <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a> -->
+        <!-- <a href="mailto:" class="link-email">Email</a> -->
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Mon, October 07, 2024">Mon, October 07, 2024</time>
+        <h1 class="mar-b-7">How it broke - Cache stampede</h1>
+    </header>
+    <p>Cache invalidation is one of the <a href="https://martinfowler.com/bliki/TwoHardThings.html">Two Hard Things</a> of software engineering (along with naming things). When working with a cache, it seems inevitable you'll end up at least thinking about it. This</p>
+<h2 id="situation">Situation</h2>
+<p>Every second, a couple dozen concurrent requests were made to an API server. To properly respond to these requests, the server needed to check whether items it serves are anomalous. Whether items are anomalous is kept track of by some other service (<code>Item API</code>), which has a HTTP GET-endpoint to retrieve the set of anomalous items.</p>
+<p>If this cache had been large, it probably would have ended up as a Redis cache or some specialized in-memory database such as RocksDB, but this particular set only contained a couple of items so a Python object was all we needed.</p>
+<p>The initial implementation looked a bit like this simplified example:</p>
+<pre><code class="python language-python">from datetime import timedelta, datetime
+
+@dataclass
+class AnomalousItemCache:
+    item_ids: set[str] | None = None
+
+class ItemApiClient:
+    """Client for interacting with the Item API"""
+    def __init__(self, cache_validity_seconds: int, cache: AnomalousItemCache):
+        ...
+        self._cache_lifetime = timedelta(seconds=cache_validity_seconds)
+        self._last_cache_update = datetime.now() - timedelta(seconds=cache_validity_seconds)
+        self._anomalous_item_cache = cache
+
+    async def item_is_anomalous(self, item_id: int) -&gt; bool:
+        if self._anomalous_item_cache is None or self._cache_expired():
+            # Perform the HTTP request to get the items and update the cache
+            ...
+
+        return item_id in self._anomalous_item_cache
+
+    def _cache_expired(self) -&gt; bool:
+        return datetime.now() - self._last_cache_update &gt;= self._cache_lifetime
+</code></pre>
+<h2 id="problem">Problem</h2>
+<p>This worked just fine, except for when the cache expired (or, in other words: the cache was <em>invalidated</em>). Starting from that moment, any request to the server that made use of this code would start performing HTTP requests to the <code>Item API</code>. This behavior is called a <code>cache stampede</code>: the gate opens and the requests storm out.</p>
+<p>The server was handling many more parallel requests than the <code>Item API</code> was built to handle; therefore this overloaded the <code>Item API</code>, causing it to return 503-error responses.</p>
+<p>(The HTTP request to the <code>Item API</code> had some error handling (not shown in the example above), so that the cache would be used even it had expired in case of an error response from <code>Item API</code>. Because of this, the issue had little impact on users. It did result in error logs and failed requests that cluttered our monitoring systems, so it needed to be resolved.)</p>
+<h2 id="solution">Solution</h2>
+<p>The solution we ended up implementing was a locking mechanism for the cache. In a nutshell:</p>
+<ul>
+<li>Only one process tries to update the cache at a time by acquiring a lock;</li>
+<li>Other processes that try to access the cache afterwards see that it is locked and use the expired cache in the meantime.</li>
+</ul>
+<p>There's one more (somewhat theoretical) situation that needs to be handled: the cache could be locked by process A in the time between process B checking if the cache is locked and process B attempting to acquire the lock. If this is all we do, the cache will be updated by process B as well. To prevent this unnecessary update, process B should check again if the cache has expired once it acquires the lock.</p>
+<p>The solution we implemented is similar to this simplified example:</p>
+<pre><code class="python language-python">import asyncio
+from datetime import timedelta, datetime
+
+@dataclass
+class AnomalousItemCache:
+    item_ids: set[str] | None = None
+
+class ItemApiClient:
+    """Client for interacting with the Item API"""
+    def __init__(self, cache_validity_seconds: int, cache: AnomalousItemCache):
+        self._cache_lifetime = timedelta(seconds=cache_validity_seconds)
+        self._last_cache_update = datetime.now() - timedelta(seconds=cache_validity_seconds)
+        self._anomalous_item_cache = cache
+        self._cache_lock = asyncio.Lock()
+
+    async def item_is_anomalous(self, item_id: int) -&gt; bool:
+        if not (self._anomalous_item_cache is None or self._cache_expired()) or self._cache_lock.locked():
+            return item_id in self._anomalous_item_cache
+
+        async with self._cache_lock:  # Awaits acquisition of the lock
+            # In case the cache was filled while waiting for the lock, check cache validity again
+            if self._anomalous_item_cache is None or self._cache_expired():
+                return item_id in self._anomalous_item_cache
+
+            # Perform the HTTP request to get the items and update the cache
+            ...
+
+        return item_id in self._anomalous_item_cache
+
+    def _cache_expired(self) -&gt; bool:
+        return datetime.now() - self._last_cache_update &gt;= self._cache_lifetime
+</code></pre>
+<h2 id="resourcesfurtherreading">Resources &amp; further reading</h2>
+<ul>
+<li><a href="https://github.com/FormoSeanIap/redis-cache-penetration-stampede-avalanche">A Complete Beginner Guide for Cache Penetration, Stampede, Avalanche</a></li>
+</ul>
+</article>
+
+<footer class="text-center mar-tb-6">
+    © 2025 Nick Doornekamp, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
