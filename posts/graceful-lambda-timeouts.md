@@ -4,9 +4,9 @@ date: 2025-07-18
 permalink: /graceful-lambda-timeouts
 ---
 
-AWS Lambda is meant for quick workloads and has a configurable maximum execution time which can't be set to more than 15 minutes. While this is well-known, you may still end up with Lambdas that sometimes take longer than their configured maximum excecution time. Such workloads are terminated abruptly as soon as they exceed the specified timeout, without an opportunity to log what happened or clean up after themselves.
+AWS Lambda workloads are terminated abruptly as soon as they exceed the specified timeout, without an opportunity to log what happened or clean up after themselves. This note provides a way to detect the imminent timeout and handle it gracefully, allowing for cleanup and logging.
 
-This note does not cover ways to actually run the workload successfully, such as using a different technology (an [ECS Task](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definitions.html) if you want to stick with AWS, for example) or optimizing your workload to run faster. It only aims to provide a way to detect the imminent timeout and handle it gracefully, allowing for cleanup and logging.
+It does not cover ways to actually run the workload successfully, such as using a different technology (an [ECS Task](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definitions.html) if you want to stick with AWS, for example) or optimizing your workload to run faster.
 
 ## How to
 
