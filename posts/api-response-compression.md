@@ -48,7 +48,7 @@ When a server sees an `Accept-Encoding` header, it can choose to compress the re
 With compression:
 
 ```bash
-curl -s -H "Accept-Encoding: gzip" -o /dev/null -w "%{size_download}\n" http://localhost:8000/data-compressed
+curl -s -o /dev/null -w "%{size_download}\n" http://localhost:8000/data -H "Accept-Encoding: gzip"
 > 69162
 ```
 
