@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>Handling Lambda timeouts with grace</title>
+    <meta name="description" content="Random collection of software engineering-related thoughts"/>
+    <meta name="keywords" content="software engineering,software development,python,kubernetes,docker,aws"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@9/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true});
+    </script>
+
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/ndoornekamp" class="link-github">GitHub</a>
+        <a target="_blank" href="https://linkedin.com/in/nick-doornekamp-35963039" class="link-linkedin">LinkedIN</a>
+        <!-- <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a> -->
+        <!-- <a href="mailto:" class="link-email">Email</a> -->
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Fri, July 18, 2025">Fri, July 18, 2025</time>
+        <h1 class="mar-b-7">Handling Lambda timeouts with grace</h1>
+    </header>
+    <p>AWS Lambda workloads are terminated abruptly as soon as they exceed the specified timeout, without an opportunity to log what happened or clean up after themselves. This note provides a way to detect the imminent timeout and handle it gracefully, allowing for cleanup and logging.</p>
+<p>It does not cover ways to actually run the workload successfully, such as using a different technology (an <a href="https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definitions.html">ECS Task</a> if you want to stick with AWS, for example) or optimizing your workload to run faster.</p>
+<h2 id="howto">How to</h2>
+<p>In short: the Lambda context provides the method <code>context.get_remaining_time_in_millis()</code>, which can be used to see how much time is left before your Lambda is terminated. The code below shows how to set an alarm (a <a href="https://www.man7.org/linux/man-pages/man2/alarm.2.html">SIGALRM signal</a>) just before that moment, so we have some time to exit gracefully.</p>
+<pre><code class="python language-python">import signal
+import logging
+from types import FrameType
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from aws_lambda_typing.context import Context as LambdaContextType
+
+logger = logging.getLogger(__name__)
+lambda_timeout_buffer_seconds = 5
+
+
+def handler(event, context: "LambdaContextType"):
+    _setup_timeout_handler(context)
+
+    try:
+        pass  # Your workload here
+    except TimeoutError:
+        logger.error("handler is about to exceed its timeout")
+    finally:
+        signal.alarm(0)  # clean up the alarm
+
+
+def _setup_timeout_handler(context: "LambdaContextType"):
+    """
+    Sets up:
+     1. A SIGALRM signal to be sent just before the Lambda times out, giving us some time to handle it
+     2. A handler for the SIGALRM signal
+    """
+    remaining_execution_time_seconds = context.get_remaining_time_in_millis() // 1000
+    signal.alarm(max(1, remaining_execution_time_seconds - lambda_timeout_buffer_seconds))
+
+    signal.signal(signal.SIGALRM, _timeout_handler)
+
+
+def _timeout_handler(_signal_code: int, _frame: FrameType | None) -&gt; None:
+    raise TimeoutError("Execution is about to time out")
+</code></pre>
+<h2 id="resourcesandfurtherreading">Resources and further reading</h2>
+<ul>
+<li><a href="https://github.com/stelligent/cloudformation-custom-resources/blob/master/lambda/python/customresource.py">CloudFormation custom resources</a></li>
+<li><a href="https://docs.aws.amazon.com/lambda/latest/dg/python-context.html">Using the Lambda context object to retrieve Python function information</a></li>
+</ul>
+</article>
+
+<footer class="text-center mar-tb-6">
+    © 2025 Nick Doornekamp, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>

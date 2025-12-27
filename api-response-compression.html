@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>API response compression</title>
+    <meta name="description" content="Random collection of software engineering-related thoughts"/>
+    <meta name="keywords" content="software engineering,software development,python,kubernetes,docker,aws"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@9/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true});
+    </script>
+
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/ndoornekamp" class="link-github">GitHub</a>
+        <a target="_blank" href="https://linkedin.com/in/nick-doornekamp-35963039" class="link-linkedin">LinkedIN</a>
+        <!-- <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a> -->
+        <!-- <a href="mailto:" class="link-email">Email</a> -->
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Sat, December 27, 2025">Sat, December 27, 2025</time>
+        <h1 class="mar-b-7">API response compression</h1>
+    </header>
+    <p>API responses quite often contain a lot of repetitive data. Think of JSON responses with repeated object keys or HTML responses with repeated tags. Data like this often lends itself well to compression, resulting in smaller response sizes and therefore less network traffic. This comes at the cost of some CPU time spent compressing and decompressing the data.</p>
+<p>(For me personally, the concrete reason for looking in to this was that AWS Lambda has a maximum response size of 6 MB; compressing responses helped me stay within that limit.)</p>
+<p>For example, consider this dummy FastAPI application:</p>
+<pre><code class="python language-python">from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/data")
+def get_data():
+    return {f"item{i}": {"key1": i, "key2": i * 2} for i in range(10_000)}
+</code></pre>
+<p>A client can fetch data from the <code>/data</code> endpoint and receive an uncompressed JSON response using a tool like <code>curl</code>. The following command fetches the data and prints the size of the response in bytes:</p>
+<pre><code class="bash language-bash">curl -s -o /dev/null -w "%{size_download}\n" http://localhost:8000/data
+&gt; 372226
+</code></pre>
+<p>Enabling compression in this example is not difficult with the <code>GZipMiddleware</code> that is shipped with FastAPI:</p>
+<pre><code class="diff language-diff">from fastapi import FastAPI
++ from fastapi.middleware.gzip import GZipMiddleware
+
+app = FastAPI()
++ app.add_middleware(GZipMiddleware, minimum_size=100)
+
+@app.get("/data")
+def get_data():
+    return {f"item{i}": {"key1": i, "key2": i * 2} for i in range(10_000)}
+</code></pre>
+<p>Now clients can indicate that they support compressed responses by including an <code>Accept-Encoding</code> header in their request. In most cases, clients automatically decompress the response if it is compressed. The value for this header specifies which compression algorithms the client supports, e.g. <code>gzip</code>, <code>deflate</code>, or <code>br</code> (Brotli).</p>
+<p>When a server sees an <code>Accept-Encoding</code> header, it can choose to compress the response body using one of the supported algorithms and include a <code>Content-Encoding</code> header in the response to indicate which compression method was used. The client (e.g. a web browser) then decompresses the response body based on this header.</p>
+<p>With compression:</p>
+<pre><code class="bash language-bash">curl -s -o /dev/null -w "%{size_download}\n" http://localhost:8000/data -H "Accept-Encoding: gzip"
+&gt; 69162
+</code></pre>
+<p>Ta-da! The response size is more than 5 times smaller.</p>
+<h2 id="resourcesandfurtherreading">Resources and further reading</h2>
+<ul>
+<li><a href="https://fastapi.tiangolo.com/tutorial/middleware/#gzipmiddleware">FastAPI GZipMiddleware documentation</a></li>
+<li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding">MDN web docs on Content-Encoding</a></li>
+<li><a href="https://speedvitals.com/blog/zstd-vs-brotli-vs-gzip/">ZSTD vs Brotli vs Gzip</a></li>
+</ul>
+</article>
+
+<footer class="text-center mar-tb-6">
+    © 2025 Nick Doornekamp, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>

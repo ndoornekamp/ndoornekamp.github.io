@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>Working with SIGTINT, SIGTERM and SIGKILL signals in Kubernetes and Python</title>
+    <meta name="description" content="Random collection of software engineering-related thoughts"/>
+    <meta name="keywords" content="software engineering,software development,python,kubernetes,docker,aws"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@9/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true});
+    </script>
+
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/ndoornekamp" class="link-github">GitHub</a>
+        <a target="_blank" href="https://linkedin.com/in/nick-doornekamp-35963039" class="link-linkedin">LinkedIN</a>
+        <!-- <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a> -->
+        <!-- <a href="mailto:" class="link-email">Email</a> -->
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Wed, February 12, 2025">Wed, February 12, 2025</time>
+        <h1 class="mar-b-7">Working with SIGTINT, SIGTERM and SIGKILL signals in Kubernetes and Python</h1>
+    </header>
+    <p>Signals are a way to (asynchronously) communicate with processes. They can originate from a user, another process or the kernel. They may be sent to a process to notify it of an event, or to request it to do something - for example, to terminate, which is the focus of this post.</p>
+<p>| Signal  | Description                                                                                       | Example command          |
+|---------|---------------------------------------------------------------------------------------------------|--------------------------|
+| <code>SIGINT</code>| A polite request to terminate, specifically intended for use in a terminal. E.g. pressing <code>ctrl+C</code> in a terminal process sends a <code>SIGINT</code> (INT for 'interrupt') signal to the process. | <code>ctrl+C</code>                 |
+| <code>SIGTERM</code>| The normal way of asking a process to terminate. It can still be caught and handled (or potentially ignored) by the process. | <code>kill &lt;pid&gt;</code>             |
+| <code>SIGKILL</code>| Not catchable - the process is ruthlessly murdered.                                            | <code>kill -9 &lt;pid&gt;</code>          |</p>
+<p>To illustrate: a system administrator could send a <code>SIGTERM</code> signal first and then give programs some time to shut down. Programs can use this time to, for example, close database connections or delete temporary files. Only if the process ignored it, escalate to a <code>SIGKILL</code> signal.</p>
+<h2 id="kubernetes">Kubernetes</h2>
+<p>Kubernetes uses termination signals to manage containers. It sends a <code>SIGTERM</code> signal to a container when it wants to stop it. This could happen, for example, to replace it with a new version or because the spot node it runs on will shut down. By default, the container has 30 seconds to shut down after receiving a <code>SIGTERM</code> signal. This can be increased by setting <code>terminationGracePeriodSeconds</code>. After this period, a <code>SIGKILL</code> signal is sent.</p>
+<h2 id="handlingsignalsinpython">Handling signals in Python</h2>
+<p>When a Python process receives <code>SIGINT</code>, it raises a <code>KeyboardInterrupt</code> exception, which can be caught and handled e.g. with a <code>try</code>/<code>except</code>/<code>finally</code> block.</p>
+<p>When receiving <code>SIGTERM</code>, no such thing happens by default and the process terminates immediately. In most cases that is fine, but in some cases you might want to handle it. For example, if the process that is being terminated is a job, you may need to store some state so you can pick up where you left off on the next run. To do so, you can use the <code>signal</code> module to register a handler for the <code>SIGTERM</code> signal:</p>
+<pre><code class="python language-python">import time
+import signal
+from types import FrameType
+
+class GracefulTerminationJob:
+    def __init__(self):
+        self.keep_running = True
+        signal.signal(signal.SIGINT, self.log_signal)
+        signal.signal(signal.SIGTERM, self.log_signal)
+
+    def log_signal(self, signal: int, frame: FrameType):
+        print(f"Received signal {signal} - stopping the job")
+        self.keep_running = False
+
+    def run(self):
+        while self.keep_running:
+            print("Doing some work...")
+            time.sleep(1)
+        print("Job stopped gracefully")
+
+if __name__ == "__main__":
+    job = GracefulTerminationJob()
+    job.run()
+</code></pre>
+<p>Note that in this example, termination signals cause the loop in the <code>run</code> method to exit, after which the program reaches it's end and exits. Consider the following example:</p>
+<pre><code class="python language-python">import time
+import signal
+import sys
+from types import FrameType
+
+def log_signal(signal: int, frame: Frametype):
+    print(f"Received signal {signal}")
+    sys.exit(1)  # Exit the program
+
+def main():
+    signal.signal(signal.SIGTERM, log_signal)
+
+    while True:
+        print("Doing some work...")
+        time.sleep(1)
+
+if __name__ == "__main__":
+    main()
+</code></pre>
+<p>Without the <code>sys.exit(1)</code> call, the program catches and handles the <code>SIGTERM</code> signal but then continues running, probably until it's finally  killed by a <code>SIGKILL</code> signal.</p>
+</article>
+
+<footer class="text-center mar-tb-6">
+    © 2025 Nick Doornekamp, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
