@@ -10,7 +10,7 @@ Note how this definition is independent of 'difficulty': something can be hard t
 
 A current example is the complection of almost all large companies with (US-based) cloud providers. Unease about this complection is increasing, but very few companies can afford the migration to an on-premise solution. Running your own hardware is hard and therefore costly, but simple in the sense that you are not intertwined with said cloud providers.
 
-## Why should we care about simplicity?
+## Why simplicity matters
 
 As many people involved with building software will have experienced, development often slows down as a system grows. Starting out, new features are churned out daily, whereas months (or years, or decades) later it may take days (or weeks, or months) to change something that sounds small. The complexity of the system can greatly accelerate this phenomenon:
 
@@ -19,6 +19,10 @@ As many people involved with building software will have experienced, developmen
 - Things that are complected need to be considered _together_, because changing one of them may affect the others.
 
 Therefore: the more complex the system you're working on is, the more quickly you will reach the limits of your ability to fit the mental model in your working memory. Once this limit is exceeded, the probability that a change comes with unintended consequences skyrockets. It's not a hard limit though - as you become more familiar with the system, its parts and their interactions will become more intuitive and take up less space in your working memory. However, the time that is required to reach this familiarity is a big factor in the common slow-down of development as a system grows.
+
+## So what?
+
+Besides the fact that I love me some etymology, I think that putting a name to the phenomemon helps to make choices that avoid unnecessary complection. I'm thinking, for example, of situations where the easy option is to slide some new functionality into an existing component, complecting the new functionality with the existing. In some of those cases, creating a new component would not be much harder but it would allow reasoning about the new functionality separately from the existing. Furthermore, if the complection is necessary, I can still aim for it to be minimal, well-defined and intuitive.
 
 ## Further reading
 
