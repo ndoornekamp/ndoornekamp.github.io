@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=3.0, minimum-scale=1.0">
+    <meta http-equiv="Content-Language" content="en">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>Simple vs. complex (and easy vs. hard)</title>
+    <meta name="description" content="Random collection of software engineering-related thoughts"/>
+    <meta name="keywords" content="software engineering,software development,python,kubernetes,docker,aws"/>
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css?family=Alegreya:400,400i|Lato:400,400i,700,900|Roboto+Mono:400,300">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <link rel="stylesheet" href="/css/normalize.css"/>
+    <link rel="stylesheet" href="/css/theme.css"/>
+
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@9/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true});
+    </script>
+
+</head>
+<body>
+<nav class="nav">
+    <div class="nav__left">
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+    </div>
+    <div class="nav__right">
+        <a target="_blank" href="https://github.com/ndoornekamp" class="link-github">GitHub</a>
+        <a target="_blank" href="https://linkedin.com/in/nick-doornekamp-35963039" class="link-linkedin">LinkedIN</a>
+        <!-- <a target="_blank" href="https://twitter.com/" class="link-twitter">Twitter</a> -->
+        <!-- <a href="mailto:" class="link-email">Email</a> -->
+    </div>
+</nav>
+
+<article class="mar-b-7">
+    <header class="text-center">
+        <time class="mar-b-6" datetime="Fri, May 01, 2026">Fri, May 01, 2026</time>
+        <h1 class="mar-b-7">Simple vs. complex (and easy vs. hard)</h1>
+    </header>
+    <p>Complex originates from 'complected', which means 'to be braided together': something made up of multiple, <em>intertwined</em> parts. It is the opposite of 'simplex', which means 'consisting of only <em>one part</em>'.</p>
+<p>Note how this definition is independent of 'difficulty': something can be hard to do or understand but consist of one part, whereas something can be easy while consisting of many parts. In the context of software engineering, it is often easy to install a library, but doing so <em>complects</em> your project with that library. In fact, quite often choosing the easy option increases complexity. Or alternatively: it is hard to do keep things simple.</p>
+<p>A current example is the complection of almost all large companies with (US-based) cloud providers. Unease about this complection is increasing, but very few companies can afford the migration to an on-premise solution. Running your own hardware is hard and therefore costly, but simple in the sense that you are not intertwined with said cloud providers.</p>
+<h2 id="whysimplicitymatters">Why simplicity matters</h2>
+<p>As many people involved with building software will have experienced, development often slows down as a system grows. Starting out, new features are churned out daily, whereas months (or years, or decades) later it may take days (or weeks, or months) to change something that sounds small. The complexity of the system can greatly accelerate this phenomenon:</p>
+<ul>
+<li>To be able to change a system, we need to be able to reason about it: to understand how it works, how its parts interact and how it interacts with other systems. We need to keep a mental model of the system in our mind.</li>
+<li>We can only keep so many things (concepts, components, etc.) in our working memory.</li>
+<li>Things that are complected need to be considered <em>together</em>, because changing one of them may affect the others.</li>
+</ul>
+<p>Therefore: the more complex the system you're working on is, the more quickly you will reach the limits of your ability to fit the mental model in your working memory. Once this limit is exceeded, the probability that a change comes with unintended consequences skyrockets. It's not a hard limit though - as you become more familiar with the system, its parts and their interactions will become more intuitive and take up less space in your working memory. However, the time that is required to reach this familiarity is a big factor in the common slow-down of development as a system grows.</p>
+<h2 id="sowhat">So what?</h2>
+<p>Besides the fact that I love me some etymology, I think that putting a name to the phenomemon helps to make choices that avoid unnecessary complection. I'm thinking, for example, of situations where the easy option is to slide some new functionality into an existing component, complecting the new functionality with the existing. In some of those cases, creating a new component would not be much harder but it would allow reasoning about the new functionality separately from the existing. Furthermore, if the complection is necessary, I can still aim for it to be minimal, well-defined and intuitive.</p>
+<h2 id="furtherreading">Further reading</h2>
+<ul>
+<li><a href="https://www.infoq.com/presentations/Simple-Made-Easy/">"Simple Made Easy" by Rich Hickey</a></li>
+</ul>
+</article>
+
+<footer class="text-center mar-tb-6">
+    © 2026 Nick Doornekamp, unless otherwise stated.
+</footer>
+
+<script>hljs.highlightAll();</script>
+</body>
+</html>
